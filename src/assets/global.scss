@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'ElementIcons';
+    src: url('@/styles/fonts/element-icons.ttf') format('truetype'),
+         url('@/styles/fonts/element-icons.woff') format('woff');
+    font-display: swap; // 添加 font-display 属性
+  }
+  body {
+    font-family: 'ElementIcons', sans-serif;
+  }
