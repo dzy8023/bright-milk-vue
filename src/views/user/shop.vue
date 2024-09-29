@@ -3,13 +3,15 @@
         <el-row :gutter="20">
             <el-col :span="6" v-for="milk in milks" :key="milk.id">
                 <el-card :body-style="{ padding: '20px' }">
-                    <el-image style=" border: none; cursor: pointer" :src="milk.image">
-                        <template #error>
-                            <div class="image-slot">
-                                <img :src="noImage" style=" border: none">
-                            </div>
-                        </template>
-                    </el-image>
+                    <div class="milk-image" @click="showMilkDetails(milk)"><el-image
+                            style=" border: none; cursor: pointer" :src="milk.image">
+                            <template #error>
+                                <div class="image-slot">
+                                    <img :src="noImage" style=" border: none">
+                                </div>
+                            </template>
+                        </el-image></div>
+
                     <div class="milk-info">
                         <h4 @click="showMilkDetails(milk)">牛奶名称: <span>{{ milk.name }}</span></h4>
                         <el-row>
@@ -37,7 +39,9 @@
         <p class="textP" v-if="pageQueryData.error">加载失败，请重试</p>
         <el-dialog v-model="dialogVisible" style="width: 400px;" title="商品详情">
             <div v-if="milkInfo">
-                <el-image class="detail-image" style=" border: none; cursor: pointer" :src="milkInfo.image">
+                <el-image class="detail-image" :zoom-rate="5" :max-scale="10" :min-scale="0.2"
+                    :hide-on-click-modal="true" :preview-src-list="[milkInfo.image]"
+                    style=" border: none; cursor: pointer" :src="milkInfo.image">
                     <template #error>
                         <div class="image-slot">
                             <img :src="noImage" style=" border: none">

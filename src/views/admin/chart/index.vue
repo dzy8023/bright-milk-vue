@@ -33,7 +33,7 @@
         <OrderChart :orderOverviewData="orderOverviewData" />
       </el-col>
       <el-col :span="12">
-        <TopSalesChart :topSalesData="topSalesData" />
+        <TopSalesChart :topSalesData="topSalesData" :dateRange="[startDate, endDate]" />
       </el-col>
     </el-row>
   </div>
