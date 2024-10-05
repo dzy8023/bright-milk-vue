@@ -3,14 +3,14 @@
     <template #header>销量排名TOP10</template>
     <div ref="topSalesChart" class="chart"></div>
   </el-card>
-  <el-dialog top="2%" :destroy-on-close="true" :draggable="true" title="商品详情" v-model="dialogVisible" height="90%" width="40%"
-    :before-close="handleClose" center>
-    <el-scrollbar max-height="400px">
+  <el-dialog top="2%" :destroy-on-close="true" :draggable="true" title="商品详情" v-model="dialogVisible"
+    width="40%" :before-close="handleClose" center>
+    <el-scrollbar max-height="460px">
       <milkSaleDetail :data="milk" />
     </el-scrollbar>
     <template #footer>
-      <el-button type="primary" size="small" @click="dialogVisible = false">关闭</el-button>
-      <el-button type="primary" size="small" @click="handleEdit">编辑</el-button>
+      <el-button type="primary" size="large" @click="dialogVisible = false">关闭</el-button>
+      <el-button type="primary" size="large" @click="handleEdit">编辑</el-button>
     </template>
   </el-dialog>
 </template>
@@ -31,7 +31,6 @@ const props = defineProps({
     type: Array,
     required: true
   }
-
 });
 const topSalesChart = ref(null);
 const dialogVisible = ref(false);
@@ -62,7 +61,7 @@ const initTopSalesChart = () => {
       containLabel: true
     },
     tooltip: {
-      trigger: 'axis',
+      trigger: props.topSalesData.length>0?'axis': 'none',
       axisPointer: {
         type: 'shadow'
       },
@@ -81,13 +80,14 @@ const initTopSalesChart = () => {
       text: '销量排名TOP10'
     },
     dataset: {
-      source: props.topSalesData
+      source: props.topSalesData.length > 0 ? props.topSalesData : [{ name: "无数据", number: 0 }] // 添加默认数据
     },
     visualMap: {
       orient: 'horizontal',
       left: 'center',
-      min: props.topSalesData[0].number,
-      max: props.topSalesData[props.topSalesData.length - 1].number,
+      //判断是否有这个属性
+      min: props.topSalesData.length > 0 && props.topSalesData[0].number ? props.topSalesData[0].number : 0,
+      max: props.topSalesData.length > 0 && props.topSalesData[props.topSalesData.length - 1].number ? props.topSalesData[props.topSalesData.length - 1].number : 0,
       text: ['High Score', 'Low Score'],
       // Map the score column to color
       dimension: 'number',
@@ -96,13 +96,15 @@ const initTopSalesChart = () => {
       }
     },
     xAxis: {
-      axisLabel: { interval: 0, rotate: 30 }
+      axisLabel: { interval: 0, rotate: 30 },
+      axisTick: {
+        alignWithLabel: true
+      },
     },
     yAxis: {
       type: 'category',
       // 添加点击事件
       triggerEvent: true,
-      data: props.topSalesData.map(item => item.name)
     },
     series: {
       color: '#698dc8',
@@ -114,45 +116,48 @@ const initTopSalesChart = () => {
     }
   };
   chart.setOption(option);
-  chart.on('click', function (params) {
-    if (params.componentType == "xAxis" || params.componentType == "yAxis") {
-      props.topSalesData.forEach(item => {
-        if (item.name === params.value) {
-          ElMessage.info(`商品名称：${item.name}，商品ID：${item.milkId}`);
-          milk.value = { ...item, term: props.dateRange };
-          dialogVisible.value = true;
-          console.log(milk.value);
-        }
-      })
-    } else {
-      console.log(params);
-      ElMessage.info(`商品名称：${params.name}，商品销量：${params.data.number}`);
-    }
-  });
-  chart.on('mouseover', params => {
-    if (params.componentType == "yAxis") {
-      const yAxisItem = {
-        value: params.value,
-        textStyle: {
-          color: '#2f6cfd',
-          fontWeight: 'bold',
-          fontSize: 13,
-        }
+  if (props.topSalesData.length > 0) { // 仅当有数据时注册事件
+
+    chart.on('click', function (params) {
+      if (params.componentType == "xAxis" || params.componentType == "yAxis") {
+        props.topSalesData.forEach(item => {
+          if (item.name === params.value) {
+            ElMessage.info(`商品名称：${item.name}，商品ID：${item.milkId}`);
+            milk.value = { ...item, term: props.dateRange };
+            dialogVisible.value = true;
+          }
+        })
+      } else {
+        ElMessage.info(`商品名称：${params.name}，商品销量：${params.data.number}`);
       }
-      let ydata = props.topSalesData.map(item => {
-        return item.name === params.value ? yAxisItem : item.name; // 添加 return 语句
-      });
-      option.yAxis.data = ydata
-      chart.setOption(option)
-    }
-  });
-  chart.on('mouseout', params => {
-    if (params.componentType == "yAxis") {
-      let ydata = props.topSalesData.map(item => item.name);
-      option.yAxis.data = ydata
-      chart.setOption(option)
-    }
-  });
+    });
+
+    chart.on('mouseover', params => {
+      if (params.componentType == "yAxis") {
+        const yAxisItem = {
+          value: params.value,
+          textStyle: {
+            color: '#2f6cfd',
+            fontWeight: 'bold',
+            fontSize: 13,
+          }
+        }
+        let ydata = props.topSalesData.map(item => {
+          return item.name === params.value ? yAxisItem : item.name; // 添加 return 语句
+        });
+        option.yAxis.data = ydata
+        chart.setOption(option)
+      }
+    });
+
+    chart.on('mouseout', params => {
+      if (params.componentType == "yAxis") {
+        let ydata = props.topSalesData.map(item => item.name);
+        option.yAxis.data = ydata
+        chart.setOption(option)
+      }
+    });
+  }
 };
 watch(() => props.topSalesData, () => {
   initTopSalesChart();

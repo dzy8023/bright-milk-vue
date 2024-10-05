@@ -153,18 +153,19 @@ const adminInfoStore = useAdminInfoStore();
 import { useTokenStore } from '@/stores/token.js';
 const tokenStore = useTokenStore();
 import { ElMessageBox, ElMessage, ElNotification } from 'element-plus';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 import { editPassword, unsubscribeNotice } from '@/api/employee';
 import { h } from 'vue'
 import { EventSourcePolyfill } from 'event-source-polyfill';
 
-const def = ref('');
+const def = ref(router.currentRoute.value.path); // 初始化为当前路由路径
 const visible = ref(false);
-const notice = ref(true);
+const notice = ref(false);
 const eventSource = ref(null);
 const switchLoading = ref(false);
+const index=["/admin/dashboard","/admin/statistics","/admin/orders","/admin/orderMilk","/admin/milk","/admin/category","/admin/employee","/admin/user"]
 
 //使用sse
 const initSSE = () => {
@@ -180,6 +181,7 @@ const initSSE = () => {
         };
         eventSource.value.onmessage = (event) => {
             try {
+                console.log('接收到消息:', event);
                 const data = JSON.parse(event.data);
                 ElNotification({
                     title: `用户 【${data.publisherId}】`,
@@ -194,7 +196,9 @@ const initSSE = () => {
         };
         eventSource.value.onerror = (error) => {
             console.error('SSE 错误:', error);
-            closeSSE();
+            notice.value = false;
+            eventSource.value.close();
+            eventSource.value = null;
             reject(error);
         };
     });
@@ -315,20 +319,27 @@ const handleSubmit = () => {
     });
 };
 onMounted(() => {
-    def.value = router.currentRoute.value.path;
-    if (notice.value) {
+    if (!notice.value) {
         switchLoading.value = true;
         setTimeout(() => {
             switchLoading.value = false;
-            initSSE().catch((error) => {
+            initSSE().then(()=>{
+                notice.value = true;
+            }).catch((error) => {
                 ElMessage.error('连接失败');
-                notice.value = false;
             });
         }, 1000);
     }
 });
 onUnmounted(() => {
     closeSSE();
+});
+
+// 监听路由变化
+watch(() => router.currentRoute.value.path, (newPath) => {
+    if(index.includes(newPath)){
+    def.value = newPath; // 更新选中的菜单项
+    }
 });
 </script>
 

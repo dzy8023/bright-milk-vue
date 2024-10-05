@@ -1,7 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import stylus from 'stylus'
-import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite'
 import path from 'path'
 
 // 设置环境变量以禁用警告
@@ -9,7 +9,7 @@ process.env.SASS_SILENCE_DEPRECATION_WARNINGS = 'true';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue()], // 确保包含 vueJsx 插件
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
@@ -44,7 +44,7 @@ export default defineConfig({
   },
   // 添加性能优化选项
   optimizeDeps: {
-    include: ['vue', 'vue-router'] // 根据您的项目依赖调整
+    include: ['vue', 'vue-router'], // 根据您的项目依赖调整
   },
   css: {
     preprocessorOptions: {

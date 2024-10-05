@@ -2,7 +2,7 @@
   <el-card>
     <div class="card-header">
       <span>牛奶总览</span>
-      <el-link :underline="false" href="/admin/milk" class="detail-link">牛奶管理</el-link>
+      <el-button text  @click="router.push('/admin/milk')" class="detail-link">牛奶管理</el-button>
     </div>
     <div class="data-grid1">
       <div class="left-right-data-card" v-for="(item, index) in milkOverview" :key="index">
@@ -39,9 +39,11 @@
   </el-card>
 </template>
 <script setup>
-import { defineProps } from 'vue';
+
 import { Plus ,Discount} from '@element-plus/icons-vue';
 import '@/styles/dashboard.scss';
+import { useRouter } from 'vue-router';
+const router = useRouter()
 
 const props = defineProps({
   currentDate: String,
