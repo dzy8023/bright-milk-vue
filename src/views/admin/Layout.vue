@@ -106,7 +106,7 @@
             </el-main>
             <!-- 底部区域 -->
             <!-- 修改密码 -->
-            <el-dialog title="修改密码" v-model="visible" width="400px" class="pwdCon" @close="handlePwdClose">
+            <el-dialog title="修改密码" v-model="visible" width="400px" class="pwdCon" @close="handlePwdClose" center>
                 <el-form :model="form" label-width="85px" :rules="rules" ref="formRef">
                     <el-form-item label="原始密码：" prop="oldPassword" show-password>
                         <el-input v-model="form.oldPassword" type="password" placeholder="请输入" clearable
@@ -157,7 +157,6 @@ import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 import { editPassword, unsubscribeNotice } from '@/api/employee';
-import { h } from 'vue'
 import { EventSourcePolyfill } from 'event-source-polyfill';
 
 const def = ref(router.currentRoute.value.path); // 初始化为当前路由路径
@@ -250,10 +249,12 @@ const handleCommand = (command) => {
             }
         ).then(async () => {
             // 退出登录
-            // 1.清空pinia中的数据
+             // 1.关闭sse
+            await  closeSSE();
+            // 2.清空pinia中的数据
             tokenStore.removeToken(); // 清空token
             adminInfoStore.removeInfo(); // 清空用户信息
-            // 2.跳转到登录页面
+            // 3.跳转到登录页面
             router.push('/login');
             ElMessage({
                 type: 'success',

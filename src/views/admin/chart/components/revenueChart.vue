@@ -41,10 +41,6 @@ const handleClose = () => {
   dialogVisible.value = false;
 };
 
-
-
-
-
 const props = defineProps({
   revenueData: {
     type: Array,
@@ -144,9 +140,7 @@ const initRevenueChart = () => {
   chart.setOption(option);
   chart.on('click', function (params) {
     if (params.value > 0) {
-      console.log(params.name);
       getMilksSaleData(params.name).then(res => {
-        console.log(res);
         saleData.value = res.data;
         dialogVisible.value = true;
       })

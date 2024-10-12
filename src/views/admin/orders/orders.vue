@@ -5,7 +5,7 @@
         订单状态：
         <el-select clearable @clear="getOrders" style="width: 150px" v-model="pageQueryData.status"
           placeholder="请选择订单状态">
-          <el-option v-for="item in status" :label="item.name" :value="item.id" :key="item.id" >
+          <el-option v-for="item in status" :label="item.name" :value="item.id" :key="item.id">
           </el-option>
         </el-select>
 
@@ -47,7 +47,7 @@
         :total="pageQueryData.total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
     </div>
   </el-card>
-  <el-dialog v-model="visible" width="500px" class="pwdCon" @close="visible = false">
+  <el-dialog v-model="visible" width="500px" class="pwdCon" @close="visible = false" center>
     <el-row>
       <el-col :span="12">
         订单号: {{ order.number }}
@@ -115,16 +115,16 @@
         </el-table-column>
       </el-table>
     </el-row>
-    <el-row>
-      <el-button  type="primary" @click="visible = false">确认</el-button>
-    </el-row>
+    <template #footer >
+      <el-button type="primary" @click="visible = false">确认</el-button>
+    </template>
   </el-dialog>
 </template>
 <script setup>
 import noImage from '@/assets/noImg.png'
 import { Search } from '@element-plus/icons-vue'
 import { ref } from 'vue'
-import {   adminPageQuery } from '@/api/order'
+import { adminPageQuery } from '@/api/order'
 
 const order = ref({})
 const orders = ref([])

@@ -16,7 +16,8 @@
               @click="selectButton('本月')">本月</el-button>
           </el-button-group>
           <span class="date">已选时间: {{ selectedDateRange }}</span>
-          <el-button type="default" class="export-button" :icon="Download">数据导出</el-button>
+          <el-button type="default" class="export-button" @click="dialogVisible = true"
+            :icon="Download">数据导出</el-button>
         </div>
       </el-col>
     </el-row>
@@ -37,6 +38,19 @@
       </el-col>
     </el-row>
   </div>
+  <el-dialog title="数据导出" v-model="dialogVisible" width="30%" height="20%" center>
+    <el-checkbox v-model="checkAll" :indeterminate="indeterminate" @change="handleCheckAll">全选</el-checkbox>
+    <el-checkbox-group v-model="checkedList" @change="handleCheckedList">
+      <el-checkbox v-for="item in charts" :label="item.name" :key="item.id" :value="item.id">{{ item.name
+        }}</el-checkbox>
+    </el-checkbox-group>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleExport" :disabled="checkedList.length === 0">导出</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -47,13 +61,65 @@ import RevenueChart from './components/revenueChart.vue';
 import UserChart from './components/userChart.vue';
 import OrderChart from './components/orderChart.vue';
 import TopSalesChart from './components/topSalesChart.vue';
-import { getChartData } from '@/api/chart';
+import { getChartData, exportChartData } from '@/api/chart';
+import { ElMessage } from 'element-plus';
 
 const selectedDateRange = ref(null)
 const startDate = ref(null)
 const endDate = ref(null)
 const selectedButton = ref(null); // 默认选中“近7日”按钮
 const dateRange = ref([])
+
+const charts = [
+  { id: 1, name: '营业额数据' },
+  { id: 2, name: '新增用户数据' },
+  { id: 3, name: '订单数据' },
+  { id: 4, name: '销量数据' }
+]
+const dialogVisible = ref(false)
+const checkAll = ref(false)
+const indeterminate = ref(false)
+const checkedList = ref([])
+
+const handleCheckAll = (val) => {
+  checkedList.value = val ? charts.map(item => item.id) : []
+  indeterminate.value = false
+}
+
+const handleCheckedList = (val) => {
+  indeterminate.value = val.length > 0 && val.length < charts.length
+  checkAll.value = val.length === charts.length
+}
+const handleExport = async () => {
+  const params = {
+    dateRange: { begin: startDate.value.toISOString().split('T')[0], end: endDate.value.toISOString().split('T')[0] },
+    type: checkedList.value.join(',')
+  }
+  exportChartData(params).then(response => {
+    if (response.data) {
+      const blob = new Blob([response.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      // 兼容不同浏览器的URL对象
+      const url = window.URL || window.webkitURL || window.moxURL;
+      const href = url.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = href;
+      // 获取响应头中的 content-disposition，获取文件名，处理中文名编码问题
+      const contentDisposition = response.headers['content-disposition'];
+      const fileName = contentDisposition.split('filename=')[1].split(';')[0]; // 修改此行
+      const decodedFileName = decodeURIComponent(fileName); 
+      a.download = decodedFileName; 
+      document.body.appendChild(a); 
+      a.click();
+      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+      ElMessage.success('导出成功')
+    } else {
+      ElMessage.error('导出失败')
+    }
+  });
+  dialogVisible.value = false;
+}
 
 onMounted(() => {
   nextTick(() => {
@@ -74,7 +140,7 @@ const init = async () => {
     revenueData.value = data
     data = []
     res.data.newUserData.forEach(item => {
-      data.push({ date: item.date,  newUsers: item.newUsers })
+      data.push({ date: item.date, newUser: item.newUser })
     });
     userData.value = {
       totalUsers: res.data.totalUserData,
@@ -137,6 +203,7 @@ const getDateRange = (start, end) => {
   }
   return range;
 };
+
 const revenueData = ref([
   { date: '2024-09-19', amount: 18.9 },
   { date: '2024-09-20', amount: 22.5 },
@@ -145,9 +212,9 @@ const revenueData = ref([
 const userData = ref({
   totalUsers: 5,
   newUsers: [
-    { date: '2024-09-19',  newUsers: 2 },
+    { date: '2024-09-19', newUsers: 2 },
     { date: '2024-09-20', newUsers: 3 },
-    { date: '2024-09-21', newUsers: 1 }]
+    { date: '2024-09-21', newUser: 1 }]
 })
 
 const orderOverviewData = ref([
@@ -156,9 +223,9 @@ const orderOverviewData = ref([
   { name: '订单总数', value: 581 }
 ]);
 const topSalesData = ref([
-{milkId: 72, name: '新鲜牧场', image: 'http://127.0.0.1:9000/bright-milk/702b9f58-51f0-447b-8329-485bac6a55c7.jpg', number: 2},
-{milkId: 73, name: '莫斯利安', image: 'http://127.0.0.1:9000/bright-milk/20c0919e-1e9b-4281-bd7b-a52b623cd78a.jpg', number: 4}, 
-{milkId: 70, name: '如实', image: 'http://127.0.0.1:9000/bright-milk/d5efde2a-e04d-4a6c-b865-d7e9a0a86e1b.jpg', number: 8}
+  { milkId: 72, name: '新鲜牧场', image: 'http://127.0.0.1:9000/bright-milk/702b9f58-51f0-447b-8329-485bac6a55c7.jpg', number: 2 },
+  { milkId: 73, name: '莫斯利安', image: 'http://127.0.0.1:9000/bright-milk/20c0919e-1e9b-4281-bd7b-a52b623cd78a.jpg', number: 4 },
+  { milkId: 70, name: '如实', image: 'http://127.0.0.1:9000/bright-milk/d5efde2a-e04d-4a6c-b865-d7e9a0a86e1b.jpg', number: 8 }
 
 ]);
 </script>

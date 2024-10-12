@@ -26,7 +26,7 @@ const initData = () => {
     let temp = props.userData.totalUsers
         props.dateRange.forEach((item, index) => {
         const user = props.userData.newUsers.find(user => user.date === item);
-        newUsers[index] = user ? user.newUsers : 0
+        newUsers[index] = user ? user.newUser : 0
         temp += newUsers[index]
         totalUsers[index] = temp
     })
