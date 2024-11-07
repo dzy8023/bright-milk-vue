@@ -34,6 +34,9 @@
           <el-button type="info" size="small" text @click="handleOrderInfo(row)">
             详情
           </el-button>
+          <el-button type="success" :disabled="row.status != '1'" size="small" text @click="handleReminders(row)">
+            催单
+          </el-button>
         </template>
       </el-table-column>
       <template #empty>
@@ -115,7 +118,7 @@
         </el-table-column>
       </el-table>
     </el-row>
-    <template #footer >
+    <template #footer>
       <el-button type="primary" @click="visible = false">确认</el-button>
     </template>
   </el-dialog>
@@ -124,7 +127,8 @@
 import noImage from '@/assets/noImg.png'
 import { Search } from '@element-plus/icons-vue'
 import { ref } from 'vue'
-import { adminPageQuery } from '@/api/order'
+import { adminPageQuery} from '@/api/order'
+import { adminReminders } from '@/api/sse'
 
 const order = ref({})
 const orders = ref([])
@@ -177,6 +181,12 @@ const handleCurrentChange = (val) => {
 const handleOrderInfo = (row) => {
   visible.value = true
   order.value = row
+}
+const handleReminders = (row) => {
+  console.log(row)
+  //TODO 催单功能
+  const { id, userId } = row
+  adminReminders({ id, userId ,message: '订单<a href="#">${id}</a>已超时，请及时付款！'});
 }
 
 </script>

@@ -2,33 +2,39 @@
     <div v-infinite-scroll="onLazyLoad" :infinite-scroll-disabled="false" :infinite-scroll-immediate="false">
         <el-row :gutter="20">
             <el-col :span="6" v-for="milk in milks" :key="milk.id">
-                <el-card :body-style="{ padding: '20px' }">
-                    <div class="milk-image" @click="showMilkDetails(milk)"><el-image
-                            style=" border: none; cursor: pointer" :src="milk.image">
-                            <template #error>
-                                <div class="image-slot">
-                                    <img :src="noImage" style=" border: none">
-                                </div>
-                            </template>
-                        </el-image></div>
-
-                    <div class="milk-info">
-                        <h4 @click="showMilkDetails(milk)">牛奶名称: <span>{{ milk.name }}</span></h4>
-                        <el-row>
-                            <el-col :span="12">
-                                <p>牛奶分类: {{ milk.categoryName }}</p>
-                            </el-col>
-                            <p>包装类型: {{ milk.packName }}</p>
-                        </el-row>
-                        <p>价格: ¥{{ milk.price }}</p>
-                    </div>
-                    <div class="milk-actions">
-                        <el-input-number style="width: 100px;" v-model="milk.quantity" :min="1" :max="99"
-                            @change="updateQuantity(milk, $event)">
-                        </el-input-number>
-                        <el-button type="success" @click="addToCart(milk)">添加到购物车</el-button>
-                    </div>
-                </el-card>
+                <div class="container">
+                    <el-card :body-style="{ padding: '20px', overflow: 'hidden' }">
+                        <div class="milk-image" @click="showMilkDetails(milk)">
+                            <el-image :src="milk.image">
+                                <template #error>
+                                    <div class="image-slot">
+                                        <img :src="noImage" style="border: none; width: 100%; height: auto;">
+                                    </div>
+                                </template>
+                            </el-image>
+                        </div>
+                        <div class="milk-info">
+                            <h3 @click="showMilkDetails(milk)" style="margin-top: 10px;margin-bottom: 10px;">牛奶名称: <span>{{
+                                milk.name }}</span>
+                            </h3>
+                            <el-row>
+                                <el-col :span="12">
+                                    <p>牛奶分类: {{ milk.categoryName }}</p>
+                                </el-col>
+                                <p>包装类型: {{ milk.packName }}</p>
+                            </el-row>
+                            <el-row>
+                                <p>价格: ¥{{ milk.price }}</p>
+                            </el-row>
+                        </div>
+                        <div class="milk-actions">
+                            <el-input-number style="width: 100px;" v-model="milk.quantity" :min="1" :max="99"
+                                @change="updateQuantity(milk, $event)">
+                            </el-input-number>
+                            <el-button type="success" @click="addToCart(milk)">添加到购物车</el-button>
+                        </div>
+                    </el-card>
+                </div>
             </el-col>
             <template #empty>
                 <el-empty description="没有数据" />
@@ -172,11 +178,10 @@ const onLazyLoad = () => {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .textP {
     /* 居中 */
     text-align: center;
-    ;
     margin: 10px;
     padding: 10px;
     border: 1px solid #ccc;
@@ -185,9 +190,17 @@ const onLazyLoad = () => {
     transition: transform 0.3s ease;
 }
 
+.container {
+    width: 100%;
+    overflow-x: auto; // 确保页面出现横向滚动条
+}
+
+.el-card {
+    min-width: 300px; // 设置卡片的最小宽度
+}
+
 .milk-card {
     margin: 10px;
-    padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -196,13 +209,27 @@ const onLazyLoad = () => {
 
 .milk-image {
     width: 100%;
-    height: 150px;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
+    .el-image {
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        height: 100%
+    }
 }
 
 .milk-info {
-    padding: 10px 0;
+    height: 100px;
+    margin: 0;
+    .el-row {
+        margin-bottom: 10px;
+    }
+    p {
+        margin: 0;
+    }
 }
+
 
 .detail-image {
     width: 100%;

@@ -18,7 +18,7 @@
                     <el-icon>
                         <DataAnalysis />
                     </el-icon>
-                    <span>数据统计1</span>
+                    <span>数据统计</span>
                 </el-menu-item>
                 <el-menu-item index="/admin/orders">
                     <el-icon>
@@ -132,6 +132,7 @@
 </template>
 
 <script setup>
+import { h } from 'vue';
 import {
     Management,
     UserFilled,
@@ -156,9 +157,9 @@ import { ElMessageBox, ElMessage, ElNotification } from 'element-plus';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
-import { editPassword, unsubscribeNotice } from '@/api/employee';
+import { editPassword,  } from '@/api/employee';
+import {unsubscribeNotice} from '@/api/sse';
 import { EventSourcePolyfill } from 'event-source-polyfill';
-
 const def = ref(router.currentRoute.value.path); // 初始化为当前路由路径
 const visible = ref(false);
 const notice = ref(false);
@@ -172,7 +173,8 @@ const initSSE = () => {
         eventSource.value = new EventSourcePolyfill('/api/admin/sse/subscribe', {
             headers: {
                 'Token': tokenStore.token
-            }
+            },
+            heartbeatTimeout:80000,
         });
         eventSource.value.onopen = (event) => {
             console.log('连接成功');
@@ -184,8 +186,12 @@ const initSSE = () => {
                 const data = JSON.parse(event.data);
                 ElNotification({
                     title: `用户 【${data.publisherId}】`,
-                    message: h('div', [h('span', { style: 'color: teal' }, `发布消息：`), data.message,
-                     h('br'), h('span', { style: 'color: teal' }, `发布时间：`),data.publishTime
+                    message: h('div', [
+                        h('span', { style: 'color: teal' }, `发布消息：`), 
+                        data.message,
+                        h('br'), 
+                        h('span', { style: 'color: teal' }, `发布时间：`), 
+                        data.publishTime
                     ]),
                     duration: 2000
                 });
@@ -218,7 +224,6 @@ const handleNoticeChange = () => {
     return new Promise((resolve, reject) => {
         const delay = 1000 + Math.random() * 1500; // 1.5-2.5秒的随机延迟
         setTimeout(() => {
-            switchLoading.value = false;
             if (!notice.value) {
                 initSSE().then(() => {
                     resolve(true);
@@ -230,6 +235,7 @@ const handleNoticeChange = () => {
                 closeSSE();
                 resolve(true);
             }
+            switchLoading.value = false;  
         }, delay);
     });
 }
@@ -338,7 +344,7 @@ onUnmounted(() => {
 
 // 监听路由变化
 watch(() => router.currentRoute.value.path, (newPath) => {
-    if(index.includes(newPath)){
+    if(def.value!== newPath &&index.includes(newPath)){
     def.value = newPath; // 更新选中的菜单项
     }
 });

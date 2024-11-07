@@ -6,3 +6,8 @@ margin: 0;
 padding: 0;
 }
 
+::selection {
+    background: #ffc0cb; /* 粉红色的底色 */
+    color: #60ca67; /* 文字的颜色 */
+}
+

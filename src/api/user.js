@@ -1,14 +1,6 @@
 //导入request.js请求工具
 import request from '@/utils/request.js';
 
-export const sendMessageService=(message)=>{
-    return request({
-        url: '/user/user/test',
-        method: 'get',
-        params: message
-    })
-}
-
 //用户登录
 export const userLoginService = (loginData) => {
     return request({
@@ -86,4 +78,3 @@ export const updateUserInfo= (params) => {
         data: {...params}
     })
 }
-

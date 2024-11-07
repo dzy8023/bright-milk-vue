@@ -1,9 +1,5 @@
 import request from '@/utils/request.js';
 
-export const unsubscribeNotice = () => {
-    return request.post('/admin/sse/unsubscribe');
-}
-
 export const employeeLoginService = (loginData) => {
 return request.post('/admin/employee/login', loginData);
 }
@@ -63,35 +59,5 @@ export const editPassword = (params) => {
         params: {oldPassword: params.oldPassword, newPassword: params.newPassword}
     });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

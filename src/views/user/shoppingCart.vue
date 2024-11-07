@@ -149,7 +149,7 @@ onMounted(() => {
 const totalPrice = computed(() => {
   return cartItems.value.reduce((total, item) => {
     return total + item.amount;
-  }, 0);
+  }, 0).toFixed(2);
 });
 // 删除商品
 const removeItem = async (item) => {

@@ -6,13 +6,13 @@
       <el-header>
         <div>余额：<strong>{{ userInfoStore.info.balance }}</strong></div>
         <el-menu active-text-color="#ffd04b" background-color="#609dbf" text-color="#fff" :ellipsis="false"
-          :default-active="def" mode="horizontal" router @select="refreshUserInfo">
+          :default-active="def" mode="horizontal" router >
           <el-menu-item index="/user/shoppingCart">
             <el-badge :value="200" :max="99" :offset="[0, 10]" class="item">
               <el-icon>
-                  <ShoppingCart />
-                </el-icon>
-                购物车
+                <ShoppingCart />
+              </el-icon>
+              购物车
             </el-badge>
           </el-menu-item>
           <el-menu-item index="/user/shop">
@@ -95,9 +95,12 @@
       <el-dialog title="聊天对话框" v-model="chatVisible" width="500px" class="chatCon" @close="handleChatClose">
         <div class="chat-content">
           <div class="messages">
-            <div class="message" v-for="(msg, index) in messages" :key="index">
-              <span class="username">{{ msg.username }}:</span>
-              <span class="text">{{ msg.message }}</span>
+            <div class="message" v-for="(msg, index) in messages" :key="index"
+              :class="{ 'my-message': msg.isMe }" ref="messageContainer">
+              <span class="username" v-if="msg.isMe===undefined||!msg.isMe">{{ msg.username }}:</span>
+              <span class="text" v-if="msg.type === 'html'" v-html="msg.message"></span>
+              <span class="text" v-else>{{ msg.message }}</span>
+              <span class="username" v-if="msg.isMe">&nbsp;:{{ msg.username }}</span>
             </div>
           </div>
           <el-input ref="messageInput" type="textarea" maxlength="200" show-word-limit :autosize="{ minRows: 1 }"
@@ -106,7 +109,7 @@
         </div>
         <template #footer>
           <el-button @click="handleChatClose">关闭</el-button>
-          <el-button type="primary" @click="sendMessage">发送</el-button>
+          <el-button type="primary" :disabled="!newMessage.trim()" @click="sendMessage">发送</el-button>
         </template>
       </el-dialog>
       <el-footer>光明牛奶订购系统 ©2024</el-footer>
@@ -128,26 +131,123 @@ const userInfoStore = useUserInfoStore();
 import { useTokenStore } from '@/stores/token.js';
 const tokenStore = useTokenStore();
 import { ElMessageBox, ElMessage } from 'element-plus';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 import { editPassword } from '@/api/employee';
-import { updateUserInfo, sendMessageService, getUserInfo } from '@/api/user'
+import { updateUserInfo, getUserInfo } from '@/api/user'
+import { sendMessageService } from '@/api/sse'
 import { refreshUserInfo } from '@/views/user/user'
-const def = ref('');
+import { EventSourcePolyfill } from 'event-source-polyfill';
+
+const def = ref(router.currentRoute.value.path); // 初始化为当前路由路径
+const index=["/user/shoppingCart","/user/shop","/user/order"]
+
 const visible = ref(false);
 const infoVisible = ref(false)
 const chatVisible = ref(false)
+const eventSource = ref(null);
+let retryTimer = null; // 添加一个变量来存储重试计时器
 
 const messages = ref([
   { username: '用户1', message: '你好！' },
-  { username: '用户2', message: '你好，有什么可以帮忙的吗？' }
+  { type: 'text', username: '用户2', message: '你好，有什么可以帮忙的吗？' }
 ]);
 const newMessage = ref('');
-
 const messageInput = ref(null);
-const handleMsgCommand = () => {
+const initSSE = () => {
+  return new Promise((resolve, reject) => {
+    eventSource.value = new EventSourcePolyfill('/api/user/sse/subscribe', {
+      headers: {
+        'Token': tokenStore.token
+      },
+      heartbeatTimeout:80000,
+    });
+    eventSource.value.onopen = (event) => {
+      console.log('连接成功');
+      resolve(true);
+    };
+    eventSource.value.onmessage = (event) => {
+      try {
+        console.log('接收到消息:', event);
+        const data = JSON.parse(event.data);
+        //解析消息，填充参数
+        const message = data.message.replace(/\${(.*?)}/g, (match, p1) => {
+          return data.args[p1] !== undefined ? data.args[p1] : match; // 用 args 中的值替换，若无则保留原样
+        });
+        messages.value.push({ type: 'html', username: data.publisherId, message: message });
+      } catch (error) {
+        console.error('解析消息失败:', error);
+      }
+    };
+    eventSource.value.onerror = (error) => {
+      console.error('SSE 错误:', error);
+      eventSource.value.close();
+      eventSource.value = null;
+      reject(error);
+    };
+  });
+};
+
+// 新增方法
+const navigateToOrder = (orderId) => {
+  // 路由到 /user/order 并传递 orderId 作为查询参数
+  router.push({ path: '/user/order', query: { orderId } });
+};
+
+// 为 <a> 标签添加点击事件
+const addClickEventToLinks = () => {
+  const links = document.querySelectorAll('.message a'); // 获取所有 <a> 标签
+  links.forEach((link) => {
+    // 检查是否已经添加过事件
+    if (!link.dataset.hasClickEvent) {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        const orderId = link.textContent; // 获取订单 ID
+        navigateToOrder(orderId);
+      });
+      link.dataset.hasClickEvent = 'true'; // 标记为已添加事件
+    }
+  });
+};
+
+const startRetryTimer = (callback, delay) => {
+  stopRetryTimer(); // 确保在启动新计时器之前停止现有计时器
+  retryTimer = setTimeout(callback, delay);
+};
+const stopRetryTimer = () => {
+  if (retryTimer) {
+    clearTimeout(retryTimer);
+    retryTimer = null; // 清空计时器
+  }
+};
+// 失败自动重试
+const handleSSERetry = () => {
+  if (!eventSource.value) {
+    startRetryTimer(() => {
+      initSSE().catch((error) => {
+        ElMessage.error('SSE 连接失败，正在重试...', error);
+        handleSSERetry(); // 连接失败时再次调用重试函数
+      });
+    }, 5000);
+  }
+};
+const handleMsgCommand = (delay = 2000) => {
   chatVisible.value = true;
+  if (!eventSource.value) {
+    // 连接 SSE
+    initSSE().then(() => {
+      ElMessage.success('SSE 连接成功');
+      stopRetryTimer(); // 连接成功，停止重试计时器
+    }).catch((error) => {
+      ElMessage.error('SSE 连接失败:', error);
+      if (delay > 30000) {
+        // 重试次数达到上限，停止重试
+        return;
+      }
+      handleSSERetry(delay * 1.2); // 连接失败时启动重试
+    });
+  }
   // 聚焦
   nextTick(() => {
     setTimeout(() => {
@@ -170,12 +270,13 @@ const sendMessage = () => {
   if (newMessage.value.trim() !== '') {
     // ,userId:1
     sendMessageService({ message: newMessage.value }).then((res) => {
-      console.log(res);
       ElMessage.success(res.data);
-      messages.value.push({ username: '我', message: newMessage.value });
+      messages.value.push({isMe: true, type: 'text', username: '我', message: newMessage.value });
       newMessage.value = '';
     })
   }
+  //获取焦点
+  messageInput.value.focus();
 };
 
 // 条目被点击后调用的函数
@@ -247,7 +348,6 @@ const rules = ref({
     pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur'
   }],
 });
-
 const form = ref({
   oldPassword: '',
   newPassword: '',
@@ -264,7 +364,6 @@ const clearForm = () => {
     phone: '',
   }
 }
-
 const handlePwdClose = () => {
   visible.value = false;
   formRef.value.resetFields();
@@ -295,9 +394,32 @@ const handleSubmit = () => {
     }
   });
 };
+
+// 监听路由变化
+watch(() => router.currentRoute.value.path, (newPath) => {
+    if(def.value!== newPath && index.includes(newPath)){
+    def.value = newPath; // 更新选中的菜单项
+    }
+});
+watch(messages, async () => {
+  await nextTick(); // 等待 DOM 更新
+  addClickEventToLinks(); // 为新的消息添加点击事件
+},{deep: true});
+
 onMounted(() => {
-  def.value = router.currentRoute.value.path;
   refreshUserInfo()
+  // 首次调用时不需要延迟
+  initSSE().catch(() => {
+    handleSSERetry(); // 启动重试
+  });
+
+  // 初始时为已有消息中的 <a> 标签添加点击事件
+  messages.value.forEach((msg) => {
+    if (msg.type === 'html') {
+      addClickEventToLinks(msg.message);
+    }
+  });
+
 });
 </script>
 
@@ -395,5 +517,35 @@ onMounted(() => {
     font-size: 14px;
     color: #666;
   }
+}
+
+.chat-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.my-message {
+  justify-content: flex-end;
+}
+
+.username {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.text {
+  background-color: #f1f1f1;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.my-message .text {
+  background-color: #d1e7dd;
 }
 </style>
