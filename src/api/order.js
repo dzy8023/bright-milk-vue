@@ -50,3 +50,9 @@ export const adminPageQuery=(pageQueryData)=>{
     })
 }
 
+export const oneMoreOrder = (orderId) => {
+    return request({
+        url: `/user/order/oneMore/${orderId}`,
+        method: 'post',
+    })
+}

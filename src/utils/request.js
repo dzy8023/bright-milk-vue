@@ -42,7 +42,7 @@ import router from '@/router/index.js';
 instance.interceptors.response.use(
     result => {
         //判断业务状态码
-        if (result.data.code === 1 || result.status === 200) {
+        if (result.data.code !== 0) {
             //放行blob响应
             return result.data instanceof Blob ? result : result.data; // 修改此行
         }

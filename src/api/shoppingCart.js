@@ -16,7 +16,7 @@ export const addShoppingCart = (params) => {
 
 export const subShoppingCart = (params) => {
     return request({
-      url: '/api/shoppingCart',
+      url: '/user/shoppingCart/sub',
       method: 'post',
       data:{...params}
   })

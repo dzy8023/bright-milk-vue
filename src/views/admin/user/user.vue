@@ -7,7 +7,7 @@
           placeholder="请输入员工名"></el-input>
         电话号码:
         <el-input v-model="pageQueryData.phone" @clear="pageQuery" clearable
-          placeholder="请输入员工名"></el-input>
+          placeholder="请输入手机号"></el-input>
         <el-button type="primary" @click="pageQuery">
           <el-icon>
             <Search />
@@ -66,7 +66,7 @@
     </el-form>
     <template #footer>
       <el-button @click="handleCancel">取 消</el-button>
-      <el-button type="primary" @click="handleSubmit">保 存</el-button>
+      <el-button type="primary" @click="handleSubmit">充 值</el-button>
     </template>
   </el-dialog>
 </template>

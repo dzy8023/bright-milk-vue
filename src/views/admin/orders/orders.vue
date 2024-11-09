@@ -20,16 +20,16 @@
       <el-table-column label="序号" width="80" type="index" />
       <el-table-column label="订单号" prop="number"></el-table-column>
       <el-table-column label="电话号码" prop="phone"></el-table-column>
-      <el-table-column label="实付金额" prop="actualPayment"></el-table-column>
-      <el-table-column label="应收金额" prop="duePayment"></el-table-column>
-      <el-table-column label="订单状态">
+      <el-table-column label="实付金额" prop="actualPayment" width="120"></el-table-column>
+      <el-table-column label="应收金额" prop="duePayment" width="120"></el-table-column>
+      <el-table-column label="订单状态"  width="100">
         <template #default="{ row }">
           <span>{{ orderStatus(row.status) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="更新时间" prop="updateTime"></el-table-column>
       <el-table-column label="创建时间" prop="createTime" />
-      <el-table-column label="操作" width="100">
+      <el-table-column label="操作">
         <template #default="{ row }">
           <el-button type="info" size="small" text @click="handleOrderInfo(row)">
             详情

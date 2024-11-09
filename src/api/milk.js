@@ -107,6 +107,12 @@ export const getMilksSaleData = (date) => {
         method: 'get',
     })
 }
+export const getAllMilkName=()=>{
+    return request({
+        url: `/admin/milk/allMilkName`,
+        method: 'get',
+    })
+}
 
 
 

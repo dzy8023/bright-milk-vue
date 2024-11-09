@@ -1,26 +1,28 @@
 <template>
   <el-card style="max-width: 100%">
     <el-row>
-      <el-col :span="17">
+      <el-col :span="17" style="display: flex; align-items: center;">
         牛奶名称：
-        <el-input v-model="pageQueryData.name" @clear="pageQuery" clearable style="width: 150px"
-          placeholder="请输入牛奶名称"></el-input>
+        <autocompleteInput v-model="pageQueryData.name" style="width: 150px; margin-right: 20px;" :load-data="loadData"
+          @clear="pageQuery" @select="select" focus clearable placeholder="请输入牛奶名称" />
         分类类型：
-        <el-select clearable @clear="pageQuery" style="width: 150px" v-model="pageQueryData.categoryId"
+        <el-select clearable @clear="pageQuery" style="width: 150px;" v-model="pageQueryData.categoryId"
           placeholder="请选择分类">
           <el-option v-for="item in categoryOption" :key="item.value" :label="item.label" :value="item.value">
           </el-option>
         </el-select>
         售卖状态：
-        <el-select clearable @clear="pageQuery" style="width: 100px" v-model="pageQueryData.status" placeholder="售卖状态">
+        <el-select clearable @clear="pageQuery" style="width: 100px; " v-model="pageQueryData.status"
+          placeholder="售卖状态">
           <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value">
           </el-option>
         </el-select>
-        <el-button type="primary" @click="pageQuery">
+        <el-button type="primary" @click="pageQuery" style="margin-left: 10px;">
           <el-icon>
             <Search />
           </el-icon>
-          &nbsp;查询</el-button>
+          &nbsp;查询
+        </el-button>
       </el-col>
       <el-col :span="7">
         <el-button type="primary" @click="inAddMilk('add')">+ 添加牛奶</el-button>
@@ -83,7 +85,8 @@
     </div>
   </el-card>
   <el-dialog v-model="dialogVisible" title="进货" width="250">
-    <el-input v-model="milk.amount" type="number" clearable style="width: 150px,center" placeholder="请输入至多3位数的牛奶数量"></el-input>
+    <el-input v-model="milk.amount" type="number" clearable style="width: 150px,center"
+      placeholder="请输入至多3位数的牛奶数量"></el-input>
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -101,6 +104,9 @@ const router = useRouter()
 import { Search } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { categoryList } from '@/api/category.js'
+import { milkPageQuery, deleteMilk, addMilkAmount, startOrStopMilk, getMilkById, getAllMilkName } from '@/api/milk.js'
+import autocompleteInput from '@/components/autocompleteInput.vue'
 const milk = ref({
   id: '',
   amount: ''
@@ -149,12 +155,8 @@ const inAddMilk = (st) => {
     })
   }
 }
-
-import { categoryList } from '@/api/category.js'
-import { milkPageQuery, deleteMilk, addMilkAmount, updateMilk, startOrStopMilk, getMilkById } from '@/api/milk.js'
-
 //获取分类数据
-const pageQuery = async () => {
+const getCategory = async () => {
   //获取分类数据
   const res1 = await categoryList()
   categoryOption.value = []
@@ -165,9 +167,10 @@ const pageQuery = async () => {
     })
   }
   console.log(categoryOption.value)
-  // 获取牛奶数据
+}
+// 获取牛奶数据
+const pageQuery = async () => {
   const res2 = await milkPageQuery(pageQueryData.value)
-  console.log(res2.data.records)
   milks.value = res2.data.records
   console.log(milks.value);
   for (let i = 0; i < milks.value.length; i++) {
@@ -175,6 +178,26 @@ const pageQuery = async () => {
   }
   pageQueryData.value.total = res2.data.total
 }
+//获取所有牛奶名称
+const loadData = () => {
+  return new Promise((resolve, reject) => {
+    getAllMilkName().then(res => {
+      console.log(res.data)
+      const data = res.data.map(item => {
+        return {
+          value: item,
+        }
+      })
+      resolve(data)
+    }).catch(err => {
+      reject(err)
+    })
+  })
+}
+const select = () => {
+  pageQuery()
+}
+getCategory()
 pageQuery()
 const handleSizeChange = (val) => {
   pageQueryData.value.pageSize = val
@@ -184,8 +207,6 @@ const handleCurrentChange = (val) => {
   pageQueryData.value.page = val
   pageQuery()
 }
-
-
 //删除分类
 const handleDel = (id) => {
   console.log(id)

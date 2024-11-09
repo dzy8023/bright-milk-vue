@@ -33,7 +33,7 @@
           <el-button type="info" size="small" text @click="handleOrderInfo(row)">
             详情
           </el-button>
-          <el-button type="danger" :disabled="row.status === '2'" size="small" @click="handleDel(row.id)" text>
+          <el-button type="danger" :disabled="!(row.status == '1')" size="small" @click="handleDel(row.id)" text>
             删除
           </el-button>
         </template>
@@ -111,17 +111,21 @@
     </el-row>
     <el-row>
       <el-button v-if="order.status == '1'" type="primary" @click="handlePay(order.id)">确认支付</el-button>
-      <el-button v-else type="primary" @click="visible = false">确认</el-button>
+      <div v-else >
+        <el-button type="primary" @click="visible = false">确认</el-button>
+        <el-button type="success" @click="handleOneMore">再来一单</el-button>
+      </div>
+      
     </el-row>
   </el-dialog>
 </template>
 <script setup>
 import noImage from '@/assets/noImg.png'
 import { Search } from '@element-plus/icons-vue'
-import { ref, onMounted,watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { refreshUserInfo } from '@/views/user/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { pageQuery, payOrder, deleteOrder } from '@/api/order'
+import { pageQuery, payOrder, deleteOrder, getOrderById,oneMoreOrder } from '@/api/order'
 import { useRouter } from 'vue-router';
 const router = useRouter();
 
@@ -140,7 +144,7 @@ const status = ref([{
   name: '已取消',
   id: 4
 }, {
-  name: '��款',
+  name: '已退款',
   id: 5
 }])
 const orderStatus = (st) => {
@@ -164,31 +168,46 @@ const getOrders = async () => {
     orders.value = res.data.records
   })
 }
-
 // 监听路由参数变化
 watch(() => router.currentRoute.value.query?.orderId, (newOrderId) => {
   if (newOrderId) {
-   visitOrderInfo(newOrderId);
+    visitOrderInfo(newOrderId);
   }
 });
-const visitOrderInfo= (orderId) => {
+const visitOrderInfo = (orderId) => {
   order.value = {}
   if (orderId) {
     orders.value.forEach(item => {
       if (String(item.id) === String(orderId)) { // 确保数据类型一致
         order.value = item;
         visible.value = true;
-        // 移除路由参数
-        router.replace({ path: '/user/order', query: {} });
       }
     });
+    if (!visible.value) {
+      getOrderById(orderId).then(res => {
+        console.log(res)
+        order.value = res.data
+        visible.value = true;
+        // 移除路由参数
+      })
+    }
+    router.replace({ path: '/user/order', query: {} });
   }
 }
 onMounted(async () => {
   await getOrders(); // 确保订单数据已加载
   const orderId = router.currentRoute.value.query?.orderId; // 获取当前路由的查询参数
-  visitOrderInfo(orderId);
+  if (orderId) {
+    visitOrderInfo(orderId);
+  }
 });
+const handleOneMore = () => {
+  visible.value = false
+  oneMoreOrder(order.value.id).then(res => {
+    ElMessage.success(res.msg ? res.msg : '再来一单成功')
+    router.push({ path: '/user/shoppingCart' });
+  })
+}
 const handleSizeChange = (val) => {
   pageQueryData.value.pageSize = val
   getOrders()

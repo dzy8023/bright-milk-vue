@@ -14,9 +14,11 @@
             </el-image>
           </template>
         </el-table-column>
-        <el-table-column label="数量" width="120">
+        <el-table-column label="数量" width="150">
           <template #default="{ row }">
-            <span>{{ row.number }}</span>
+            <el-button :disabled="row.number === 1" size="small" @click="decreaseQuantity(row)">-</el-button>
+            <span style="margin: 0 10px;">{{ row.number }}</span>
+            <el-button size="small" @click="increaseQuantity(row)">+</el-button>
           </template>
         </el-table-column>
         <el-table-column label="小计" width="120">
@@ -98,11 +100,12 @@
 
 <script setup>
 import noImage from '@/assets/noImg.png'
-import { ref, computed,onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { getShoppingCart, delShoppingCart } from '@/api/shoppingCart';
+import { getShoppingCart, delShoppingCart, addShoppingCart, subShoppingCart } from '@/api/shoppingCart';
 import { createOrder, payOrder } from '@/api/order';
 import { refreshUserInfo } from '@/views/user/user'
+import { throttle } from '@/utils/tools'
 
 // 示例购物车数据
 const cartItems = ref([
@@ -156,7 +159,6 @@ const removeItem = async (item) => {
   // 删除购物车中的商品
   await delShoppingCart(item.id)
   getUserCart();
-  cartItems.value = cartItems.value.filter(cartItem => cartItem.id !== item.id);
   ElMessage.success(`${item.name} 已从购物车中删除`);
 };
 const handlePay = () => {
@@ -184,12 +186,31 @@ const submitOrder = async () => {
   })
   getUserCart()
 };
+const decreaseQuantity = throttle((item) => {
+  if (item.number === 1) {
+    return;
+  }
+  subShoppingCart(item).then((res) => {
+    const cartItem = cartItems.value.find(cartItem => cartItem.id === item.id);
+    cartItem.number--;
+    cartItem.amount = res.data;
+  })
+}, 1000);
+
+const increaseQuantity =throttle((item) => {
+  addShoppingCart({...item, number: 1 }).then((res) => {
+    const cartItem = cartItems.value.find(cartItem => cartItem.id === item.id);
+    cartItem.number++;
+    cartItem.amount = res.data;
+  })}, 1000);
+
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .pwdCon {
   z-index: 2000;
 }
+
 .el-input__inner {
   padding: 0 12px;
 }
@@ -229,7 +250,6 @@ const submitOrder = async () => {
   display: none;
 }
 
-.el-button {
-  margin: 0 auto;
-}
-</style>
+// .el-button {
+//   margin: 0 auto;
+// }</style>

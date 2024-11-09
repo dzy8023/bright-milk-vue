@@ -136,10 +136,7 @@ const addToCart = (milk) => {
     }).then(() => {
         ElMessage.success(`${milk.name} (数量: ${milk.quantity}) 已添加到购物车`);
         milk.quantity = 1; // 添加成功后重置数量为1
-    }).catch((err) => {
-        console.error(err);
-        ElMessage.error(err.msg ? err.msg : '添加到购物车失败');
-    });
+    })
 };
 
 const updateQuantity = (milk, quantity) => {

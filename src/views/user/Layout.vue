@@ -25,11 +25,13 @@
               <Tickets />
             </el-icon>
             我的订单</el-menu-item>
-          <el-menu-item @click="handleMsgCommand">
+          <el-menu-item>
+            <el-badge :is-dot="hasNewMessage" :offset="[4,15]" class="item" @click.stop="handleMsgCommand">
             <el-icon>
               <ChatDotRound />
             </el-icon>
             消息
+          </el-badge>
           </el-menu-item>
           <el-menu-item>
             <!-- 下拉菜单 -->
@@ -135,7 +137,7 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 const router = useRouter();
 import { editPassword } from '@/api/employee';
-import { updateUserInfo, getUserInfo } from '@/api/user'
+import { updateUserInfo } from '@/api/user'
 import { sendMessageService } from '@/api/sse'
 import { refreshUserInfo } from '@/views/user/user'
 import { EventSourcePolyfill } from 'event-source-polyfill';
@@ -147,6 +149,7 @@ const visible = ref(false);
 const infoVisible = ref(false)
 const chatVisible = ref(false)
 const eventSource = ref(null);
+const hasNewMessage=ref(true);
 let retryTimer = null; // 添加一个变量来存储重试计时器
 
 const messages = ref([
@@ -212,7 +215,7 @@ const addClickEventToLinks = () => {
 };
 
 const startRetryTimer = (callback, delay) => {
-  stopRetryTimer(); // 确保在启动新计时器之前停止现有计时器
+  stopRetryTimer(); // 确保在启动���计时器之前停止现有计时器
   retryTimer = setTimeout(callback, delay);
 };
 const stopRetryTimer = () => {
@@ -254,10 +257,13 @@ const handleMsgCommand = (delay = 2000) => {
       if (messageInput.value) {
         messageInput.value.focus();
       }
+      if(hasNewMessage.value){
+        addClickEventToLinks(); // 为新的消息添加点击事件
+        hasNewMessage.value=false;
+      }
     }, 0); // 延迟执行
   });
 };
-
 const handleChatClose = () => {
   chatVisible.value = false;
 };
@@ -403,7 +409,11 @@ watch(() => router.currentRoute.value.path, (newPath) => {
 });
 watch(messages, async () => {
   await nextTick(); // 等待 DOM 更新
+  if (chatVisible.value) {
   addClickEventToLinks(); // 为新的消息添加点击事件
+  }else if(!hasNewMessage.value){
+     hasNewMessage.value=true;
+  }
 },{deep: true});
 
 onMounted(() => {
@@ -412,14 +422,6 @@ onMounted(() => {
   initSSE().catch(() => {
     handleSSERetry(); // 启动重试
   });
-
-  // 初始时为已有消息中的 <a> 标签添加点击事件
-  messages.value.forEach((msg) => {
-    if (msg.type === 'html') {
-      addClickEventToLinks(msg.message);
-    }
-  });
-
 });
 </script>
 
